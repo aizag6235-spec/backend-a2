@@ -1,15 +1,23 @@
-let users = [];
+const pool = require("../db");
 
-function getAllUsers() {
-  return users;
+async function createUser(name, password) {
+  const result = await pool.query(
+    "INSERT INTO users (name, password) VALUES ($1, $2) RETURNING *",
+    [name, password],
+  );
+
+  return result.rows[0];
 }
 
-function addUser(user) {
-  users.push(user);
-  return user;
+async function getUserByName(name) {
+  const result = await pool.query("SELECT * FROM users WHERE name = $1", [
+    name,
+  ]);
+
+  return result.rows[0];
 }
 
 module.exports = {
-  getAllUsers,
-  addUser,
+  createUser,
+  getUserByName,
 };

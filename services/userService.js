@@ -1,18 +1,29 @@
-const repository = require("../repositories/postgresRepository");
+const bcrypt = require("bcrypt");
+const repository = require("../repositories/memoryRepository");
 
-async function getUsers() {
-  return await repository.getAllUsers();
+async function registerUser(name, password) {
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  return await repository.createUser(name, hashedPassword);
 }
 
-async function createUser(name) {
-  const user = {
-    name: name,
-  };
+async function loginUser(name, password) {
+  const user = await repository.getUserByName(name);
 
-  return await repository.addUser(user);
+  if (!user) {
+    return null;
+  }
+
+  const match = await bcrypt.compare(password, user.password);
+
+  if (!match) {
+    return null;
+  }
+
+  return user;
 }
 
 module.exports = {
-  getUsers,
-  createUser,
+  registerUser,
+  loginUser,
 };

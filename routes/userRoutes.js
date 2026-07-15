@@ -1,25 +1,61 @@
 const express = require("express");
+const jwt = require("jsonwebtoken");
+
 const router = express.Router();
 
 const service = require("../services/userService");
+const authenticate = require("../middleware/auth");
 
-router.get("/users", async (req, res) => {
-  const users = await service.getUsers();
-  res.json(users);
-});
+// Register
+router.post("/register", async (req, res) => {
+  const { name, password } = req.body;
 
-router.post("/users", async (req, res) => {
-  const { name } = req.body;
-
-  if (!name) {
+  if (!name || !password) {
     return res.status(400).json({
-      error: "Name is required",
+      error: "Name and password are required",
     });
   }
 
-  const user = await service.createUser(name);
+  const user = await service.registerUser(name, password);
 
-  res.status(201).json(user);
+  res.status(201).json({
+    id: user.id,
+    name: user.name,
+  });
+});
+
+// Login
+router.post("/login", async (req, res) => {
+  const { name, password } = req.body;
+
+  const user = await service.loginUser(name, password);
+
+  if (!user) {
+    return res.status(401).json({
+      error: "Invalid credentials",
+    });
+  }
+
+  const token = jwt.sign(
+    {
+      id: user.id,
+      name: user.name,
+    },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: "1h",
+    },
+  );
+
+  res.json({ token });
+});
+
+// Protected Route
+router.get("/profile", authenticate, (req, res) => {
+  res.json({
+    message: "Welcome!",
+    user: req.user,
+  });
 });
 
 module.exports = router;
